@@ -1,0 +1,7 @@
+{
+  "name": "Twitch Roulette Overlay",
+  "description": "A high-performance, customizable OBS overlay featuring an interactive roulette wheel triggered by Twitch channel point redemptions. Features automated spinning, TTS announcements, and Gemini-powered witty commentary.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
