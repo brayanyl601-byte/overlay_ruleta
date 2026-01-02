@@ -5,17 +5,17 @@ export enum SpinResult {
 }
 
 export interface RouletteConfig {
-  winProbability: number; // 0.0 to 1.0
+  winProbability: number;
   winColor: string;
   loseColor: string;
-  spinDuration: number; // in milliseconds
-  voiceName: string;
+  spinDuration: number;
+  voiceName: string; // Browser voice name
   pitch: number;
   rate: number;
   aiCommentaryEnabled: boolean;
-  scale: number; // 0.2 to 1.5
-  positionX: number; // 0 to 100 (percentage)
-  positionY: number; // 0 to 100 (percentage)
+  scale: number;
+  positionX: number;
+  positionY: number;
 }
 
 export interface SpinEvent {

@@ -9,220 +9,161 @@ interface SettingsPanelProps {
   onTest: () => void;
   twitchSettings: TwitchSettings;
   setTwitchSettings: React.Dispatch<React.SetStateAction<TwitchSettings>>;
-  previewVoice: (text: string, voiceName: string) => void;
+  previewVoice: (text: string) => void;
 }
 
 const SettingsPanel: React.FC<SettingsPanelProps> = ({ 
   config, setConfig, onClose, onTest, twitchSettings, setTwitchSettings, previewVoice 
 }) => {
-  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [browserVoices, setBrowserVoices] = useState<SpeechSynthesisVoice[]>([]);
 
   useEffect(() => {
     const updateVoices = () => {
-      setVoices(window.speechSynthesis.getVoices());
+      const allVoices = window.speechSynthesis.getVoices();
+      // Filtrar y ordenar: Primero las de español, luego el resto
+      const spanishVoices = allVoices.filter(v => v.lang.startsWith('es'));
+      const otherVoices = allVoices.filter(v => !v.lang.startsWith('es'));
+      setBrowserVoices([...spanishVoices, ...otherVoices]);
     };
     updateVoices();
     window.speechSynthesis.onvoiceschanged = updateVoices;
   }, []);
 
-  const handlePreview = () => {
-    previewVoice("Hola streamer, así es como suena esta voz en tu ruleta.", config.voiceName);
-  };
-
-  const HelpLink = ({ href, text }: { href: string, text: string }) => (
-    <a 
-      href={href} 
-      target="_blank" 
-      rel="noopener noreferrer" 
-      className="text-[10px] text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1 mt-1 ml-1"
-    >
-      <i className="fas fa-external-link-alt text-[8px]"></i>
+  const HelpLink = ({ href, text }: { href: string; text: string }) => (
+    <a href={href} target="_blank" rel="noopener noreferrer" className="text-[10px] text-sky-400 hover:text-white transition-colors block mt-1 underline">
       {text}
     </a>
   );
 
   return (
-    <div className="bg-gray-900 text-white w-full max-w-4xl p-8 rounded-3xl border border-gray-700 shadow-2xl overflow-y-auto max-h-[90vh] grid grid-cols-1 md:grid-cols-2 gap-8">
-      <div className="md:col-span-2 flex justify-between items-center mb-2">
-        <h2 className="text-3xl font-bold flex items-center gap-3">
-          <i className="fas fa-magic text-purple-500"></i>
-          Personalización Total
+    <div className="bg-gray-950 text-white w-full max-w-6xl p-8 rounded-[2rem] border-2 border-white/20 shadow-[0_0_80px_rgba(0,0,0,1)] overflow-y-auto max-h-[90vh] relative scrollbar-hide pointer-events-auto">
+      <div className="flex justify-between items-center mb-8 border-b border-white/10 pb-6">
+        <h2 className="text-3xl font-black italic uppercase flex items-center gap-4">
+          <span className="bg-white text-black px-3 py-0.5 rounded-sm text-2xl">CONFIG</span>
+          CENTRO DE CONTROL
         </h2>
-        <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
-          <i className="fas fa-times text-2xl"></i>
-        </button>
+        <button onClick={onClose} className="hover:text-red-500 transition-all"><i className="fas fa-times text-2xl"></i></button>
       </div>
 
-      {/* COLUMNA 1: APARIENCIA Y POSICIÓN */}
-      <section className="space-y-6 bg-gray-800/50 p-6 rounded-2xl border border-gray-700">
-        <h3 className="text-purple-400 font-bold uppercase text-xs tracking-widest border-b border-gray-700 pb-2 flex items-center gap-2">
-          <i className="fas fa-expand-arrows-alt"></i> Tamaño y Posición
-        </h3>
-        
-        <div>
-          <label className="flex justify-between text-sm font-medium mb-2">
-            <span>Escala (Tamaño)</span>
-            <span className="text-purple-400 font-mono">{(config.scale * 100).toFixed(0)}%</span>
-          </label>
-          <input 
-            type="range" min="0.2" max="1.5" step="0.05"
-            value={config.scale}
-            onChange={e => setConfig({...config, scale: parseFloat(e.target.value)})}
-            className="w-full accent-purple-500"
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs text-gray-400 mb-1 italic">Posición X (H)</label>
-            <input 
-              type="range" min="0" max="100" step="1"
-              value={config.positionX}
-              onChange={e => setConfig({...config, positionX: parseInt(e.target.value)})}
-              className="w-full accent-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-400 mb-1 italic">Posición Y (V)</label>
-            <input 
-              type="range" min="0" max="100" step="1"
-              value={config.positionY}
-              onChange={e => setConfig({...config, positionY: parseInt(e.target.value)})}
-              className="w-full accent-blue-500"
-            />
-          </div>
-        </div>
-
-        <div className="flex gap-4 pt-2">
-          <div className="flex-1">
-            <label className="block text-xs text-gray-400 mb-1">Color Enfriado</label>
-            <input 
-              type="color" value={config.winColor}
-              onChange={e => setConfig({...config, winColor: e.target.value})}
-              className="w-full h-8 rounded bg-gray-900 border-none cursor-pointer"
-            />
-          </div>
-          <div className="flex-1">
-            <label className="block text-xs text-gray-400 mb-1">Color A Salvo</label>
-            <input 
-              type="color" value={config.loseColor}
-              onChange={e => setConfig({...config, loseColor: e.target.value})}
-              className="w-full h-8 rounded bg-gray-900 border-none cursor-pointer"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-2">Probabilidad de Enfriar: { (config.winProbability * 100).toFixed(0) }%</label>
-          <input 
-            type="range" min="0" max="1" step="0.05"
-            value={config.winProbability}
-            onChange={e => setConfig({...config, winProbability: parseFloat(e.target.value)})}
-            className="w-full accent-red-500"
-          />
-        </div>
-      </section>
-
-      {/* COLUMNA 2: VOZ E IA */}
-      <section className="space-y-6 bg-gray-800/50 p-6 rounded-2xl border border-gray-700">
-        <h3 className="text-purple-400 font-bold uppercase text-xs tracking-widest border-b border-gray-700 pb-2 flex items-center gap-2">
-          <i className="fas fa-microphone"></i> Audio y Voz
-        </h3>
-        
-        <div className="space-y-2">
-          <label className="block text-sm font-medium italic">Elegir Voz del Navegador</label>
-          <div className="flex gap-2">
-            <select 
-              value={config.voiceName}
-              onChange={e => setConfig({...config, voiceName: e.target.value})}
-              className="flex-1 bg-gray-900 border border-gray-700 rounded-lg p-2 text-sm focus:ring-2 focus:ring-purple-500 outline-none"
-            >
-              {voices.map(v => <option key={v.name} value={v.name}>{v.name} ({v.lang})</option>)}
-            </select>
-            <button 
-              onClick={handlePreview}
-              className="bg-purple-600 hover:bg-purple-500 p-2 rounded-lg transition-colors shadow-lg w-10 h-10 flex items-center justify-center"
-              title="Escuchar voz de prueba"
-            >
-              <i className="fas fa-play text-xs"></i>
-            </button>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 bg-gray-900/50 p-3 rounded-lg border border-gray-700">
-          <input 
-            type="checkbox" id="aiEnabled"
-            checked={config.aiCommentaryEnabled}
-            onChange={e => setConfig({...config, aiCommentaryEnabled: e.target.checked})}
-            className="w-5 h-5 accent-red-500 cursor-pointer"
-          />
-          <label htmlFor="aiEnabled" className="text-sm font-medium cursor-pointer">Comentarios de IA (Enfriador)</label>
-        </div>
-
-        <div className="pt-4">
-          <button 
-            onClick={onTest}
-            className="w-full bg-gradient-to-r from-red-600 to-purple-600 py-4 rounded-xl font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-xl flex items-center justify-center gap-3"
-          >
-            <i className="fas fa-sync-alt animate-spin-slow"></i>
-            Probar Ruleta
-          </button>
-        </div>
-      </section>
-
-      {/* TWITCH CONFIG (FULL WIDTH BELOW) */}
-      <section className="md:col-span-2 pt-6 border-t border-gray-800 space-y-4">
-        <h3 className="text-purple-400 font-bold uppercase text-xs tracking-widest flex items-center gap-2">
-          <i className="fab fa-twitch text-purple-500"></i> Conexión Twitch (Filtros)
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="space-y-6">
-            <div>
-              <input 
-                placeholder="Broadcaster ID (Tu ID numérico)" 
-                value={twitchSettings.channelId}
-                onChange={e => setTwitchSettings({...twitchSettings, channelId: e.target.value})}
-                className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-xs focus:ring-2 focus:ring-purple-500 outline-none"
-              />
-              <HelpLink href="https://twitchinsights.net/checkuser" text="¿Cuál es mi Broadcaster ID?" />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* COLUMNA 1: POSICIÓN Y ESCALA */}
+        <div className="space-y-6">
+          <section className="bg-white/5 p-6 rounded-3xl border border-white/10">
+            <h3 className="text-sky-400 font-black uppercase text-[10px] tracking-widest mb-4 border-b border-white/5 pb-2">Ubicación en OBS</h3>
+            <div className="space-y-5">
+              <div>
+                <label className="flex justify-between text-[10px] font-bold uppercase text-gray-400 mb-2">Posición Horizontal (X): {config.positionX}%</label>
+                <input type="range" min="0" max="100" value={config.positionX} onChange={e => setConfig({...config, positionX: parseInt(e.target.value)})} className="w-full h-1 bg-gray-800 rounded-full appearance-none accent-white" />
+              </div>
+              <div>
+                <label className="flex justify-between text-[10px] font-bold uppercase text-gray-400 mb-2">Posición Vertical (Y): {config.positionY}%</label>
+                <input type="range" min="0" max="100" value={config.positionY} onChange={e => setConfig({...config, positionY: parseInt(e.target.value)})} className="w-full h-1 bg-gray-800 rounded-full appearance-none accent-white" />
+              </div>
+              <div>
+                <label className="flex justify-between text-[10px] font-bold uppercase text-gray-400 mb-2">Escala: {(config.scale * 100).toFixed(0)}%</label>
+                <input type="range" min="0.3" max="1.5" step="0.05" value={config.scale} onChange={e => setConfig({...config, scale: parseFloat(e.target.value)})} className="w-full h-1 bg-gray-800 rounded-full appearance-none accent-white" />
+              </div>
             </div>
+          </section>
 
-            <div>
-              <input 
-                placeholder="Reward ID (El ID específico de la Ruleta)" 
-                value={twitchSettings.rewardId}
-                onChange={e => setTwitchSettings({...twitchSettings, rewardId: e.target.value})}
-                className="w-full bg-gray-900 border border-red-900/50 rounded-lg p-3 text-xs focus:ring-2 focus:ring-red-500 outline-none"
-              />
-              <HelpLink href="https://dashboard.twitch.tv/viewer-rewards/channel-points/rewards" text="Ir a mis Recompensas de Twitch" />
-              <p className="text-[9px] text-gray-500 italic mt-1 ml-1 leading-tight">Nota: Obtén el ID canjeando el premio con la consola de OBS abierta.</p>
+          <section className="bg-white/5 p-6 rounded-3xl border border-white/10">
+            <h3 className="text-purple-400 font-black uppercase text-[10px] tracking-widest mb-4 border-b border-white/5 pb-2">Dificultad</h3>
+            <div className="space-y-2">
+              <label className="block text-[10px] font-bold text-gray-400 uppercase">Probabilidad de ganar: {(config.winProbability * 100).toFixed(0)}%</label>
+              <input type="range" min="0" max="1" step="0.01" value={config.winProbability} onChange={e => setConfig({...config, winProbability: parseFloat(e.target.value)})} className="w-full h-1 bg-gray-800 rounded-full appearance-none accent-purple-500" />
             </div>
-          </div>
-
-          <div className="space-y-6">
-            <div>
-              <input 
-                placeholder="Twitch Client ID" 
-                value={twitchSettings.clientId}
-                onChange={e => setTwitchSettings({...twitchSettings, clientId: e.target.value})}
-                className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-xs focus:ring-2 focus:ring-purple-500 outline-none"
-              />
-              <HelpLink href="https://dev.twitch.tv/console/apps" text="Consola de Desarrolladores Twitch" />
-            </div>
-
-            <div>
-              <input 
-                placeholder="Access Token (OAuth)" 
-                type="password"
-                value={twitchSettings.accessToken}
-                onChange={e => setTwitchSettings({...twitchSettings, accessToken: e.target.value})}
-                className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-xs focus:ring-2 focus:ring-purple-500 outline-none"
-              />
-              <HelpLink href="https://twitchtokengenerator.com/" text="Generar Token de Acceso (OAuth)" />
-            </div>
-          </div>
+          </section>
         </div>
-      </section>
+
+        {/* COLUMNA 2: CONFIGURACIÓN DE VOZ (GRATIS Y FLUIDA) */}
+        <div className="space-y-6">
+          <section className="bg-white/5 p-6 rounded-3xl border border-white/10">
+            <h3 className="text-yellow-400 font-black uppercase text-[10px] tracking-widest mb-4 border-b border-white/5 pb-2">Voz del Narrador (Español)</h3>
+            <div className="space-y-5">
+              <div>
+                <label className="block text-[10px] text-gray-500 uppercase font-black mb-1">Elegir Voz (Preferido: es-ES/MX)</label>
+                <select 
+                  value={config.voiceName} 
+                  onChange={e => setConfig({...config, voiceName: e.target.value})}
+                  className="w-full bg-black/50 border border-white/10 rounded-xl p-2.5 text-[11px] outline-none text-sky-200"
+                >
+                  <option value="">Seleccionar voz...</option>
+                  {browserVoices.map(v => (
+                    <option key={v.name} value={v.name} className="bg-gray-900">
+                      {v.name} ({v.lang}) {v.lang.startsWith('es') ? '🇪🇸' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] text-gray-500 uppercase font-black mb-1">Tono (Pitch)</label>
+                  <input type="range" min="0.5" max="2" step="0.1" value={config.pitch} onChange={e => setConfig({...config, pitch: parseFloat(e.target.value)})} className="w-full h-1 bg-gray-800 rounded-full appearance-none accent-white" />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-gray-500 uppercase font-black mb-1">Velocidad (Rate)</label>
+                  <input type="range" min="0.5" max="2" step="0.1" value={config.rate} onChange={e => setConfig({...config, rate: parseFloat(e.target.value)})} className="w-full h-1 bg-gray-800 rounded-full appearance-none accent-white" />
+                </div>
+              </div>
+              
+              <button 
+                onClick={() => previewVoice("¡Hola! Así sonaré en tu directo cuando alguien use sus puntos de canal.")}
+                className="w-full py-2 bg-white/5 border border-white/10 rounded-xl text-[10px] font-bold uppercase hover:bg-white/10 transition-all"
+              >Probar Voz Ahora</button>
+            </div>
+          </section>
+
+          <section className="bg-white/5 p-6 rounded-3xl border border-white/10">
+            <h3 className="text-green-400 font-black uppercase text-[10px] tracking-widest mb-4 border-b border-white/5 pb-2">Inteligencia Artificial</h3>
+            <div className="flex items-center justify-between">
+              <label className="text-[10px] font-bold text-gray-400 uppercase">Comentarios de Gemini</label>
+              <button 
+                onClick={() => setConfig({...config, aiCommentaryEnabled: !config.aiCommentaryEnabled})}
+                className={`w-12 h-6 rounded-full transition-all relative ${config.aiCommentaryEnabled ? 'bg-green-500' : 'bg-gray-700'}`}
+              >
+                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${config.aiCommentaryEnabled ? 'left-7' : 'left-1'}`} />
+              </button>
+            </div>
+            <p className="text-[9px] text-gray-500 mt-2 italic">Usa Gemini para generar texto sarcástico, pero usa la voz del navegador para máxima fluidez.</p>
+          </section>
+        </div>
+
+        {/* COLUMNA 3: CONEXIÓN TWITCH */}
+        <div className="space-y-6">
+          <section className="bg-white/5 p-6 rounded-3xl border border-white/10">
+            <h3 className="text-sky-400 font-black uppercase text-[10px] tracking-widest mb-4 border-b border-white/5 pb-2">Conexión Twitch</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[9px] text-gray-500 uppercase font-black">User ID (Canal)</label>
+                <input value={twitchSettings.channelId} onChange={e => setTwitchSettings({...twitchSettings, channelId: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-[10px] font-mono" placeholder="ID Numérico" />
+                <HelpLink href="https://twitchinsights.net/checkuser" text="→ Obtener mi ID de Twitch" />
+              </div>
+              <div>
+                <label className="block text-[9px] text-gray-500 uppercase font-black">Reward ID</label>
+                <input value={twitchSettings.rewardId} onChange={e => setTwitchSettings({...twitchSettings, rewardId: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-[10px] font-mono" placeholder="ID de la recompensa" />
+                <HelpLink href="https://dashboard.twitch.tv/viewer-rewards/channel-points/rewards" text="→ Ver mis Recompensas" />
+              </div>
+              <div>
+                <label className="block text-[9px] text-gray-500 uppercase font-black">Client ID</label>
+                <input value={twitchSettings.clientId} onChange={e => setTwitchSettings({...twitchSettings, clientId: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-[10px] font-mono" />
+                <HelpLink href="https://dev.twitch.tv/console/apps" text="→ Obtener Client ID (Dev Console)" />
+              </div>
+              <div>
+                <label className="block text-[9px] text-gray-500 uppercase font-black">OAuth Token</label>
+                <input type="password" value={twitchSettings.accessToken} onChange={e => setTwitchSettings({...twitchSettings, accessToken: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-[10px] font-mono" />
+                <HelpLink href="https://twitchtokengenerator.com/" text="→ Generar Access Token" />
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <div className="mt-8 pt-6 border-t border-white/10">
+        <button onClick={onTest} className="w-full bg-white text-black py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-lg italic hover:bg-sky-400 transition-all transform active:scale-[0.98]">
+          Girar Ruleta (Test de Visuales y Voz)
+        </button>
+      </div>
     </div>
   );
 };
