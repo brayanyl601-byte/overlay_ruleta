@@ -15,15 +15,21 @@ interface SettingsPanelProps {
 const SettingsPanel: React.FC<SettingsPanelProps> = ({ 
   config, setConfig, onClose, onTest, twitchSettings, setTwitchSettings, previewVoice 
 }) => {
-  const [browserVoices, setBrowserVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [spanishVoices, setSpanishVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [otherVoices, setOtherVoices] = useState<SpeechSynthesisVoice[]>([]);
 
   useEffect(() => {
     const updateVoices = () => {
       const allVoices = window.speechSynthesis.getVoices();
-      // Filtrar y ordenar: Primero las de español, luego el resto
-      const spanishVoices = allVoices.filter(v => v.lang.startsWith('es'));
-      const otherVoices = allVoices.filter(v => !v.lang.startsWith('es'));
-      setBrowserVoices([...spanishVoices, ...otherVoices]);
+      const es = allVoices.filter(v => v.lang.toLowerCase().includes('es'));
+      const others = allVoices.filter(v => !v.lang.toLowerCase().includes('es'));
+      setSpanishVoices(es);
+      setOtherVoices(others);
+      
+      // Auto-select first Spanish voice if none selected
+      if (!config.voiceName && es.length > 0) {
+        setConfig(prev => ({ ...prev, voiceName: es[0].name }));
+      }
     };
     updateVoices();
     window.speechSynthesis.onvoiceschanged = updateVoices;
@@ -75,26 +81,53 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
           </section>
         </div>
 
-        {/* COLUMNA 2: CONFIGURACIÓN DE VOZ (GRATIS Y FLUIDA) */}
+        {/* COLUMNA 2: CONFIGURACIÓN DE VOZ (MEJORADA PARA OBS) */}
         <div className="space-y-6">
           <section className="bg-white/5 p-6 rounded-3xl border border-white/10">
             <h3 className="text-yellow-400 font-black uppercase text-[10px] tracking-widest mb-4 border-b border-white/5 pb-2">Voz del Narrador (Español)</h3>
             <div className="space-y-5">
               <div>
-                <label className="block text-[10px] text-gray-500 uppercase font-black mb-1">Elegir Voz (Preferido: es-ES/MX)</label>
-                <select 
-                  value={config.voiceName} 
-                  onChange={e => setConfig({...config, voiceName: e.target.value})}
-                  className="w-full bg-black/50 border border-white/10 rounded-xl p-2.5 text-[11px] outline-none text-sky-200"
-                >
-                  <option value="">Seleccionar voz...</option>
-                  {browserVoices.map(v => (
-                    <option key={v.name} value={v.name} className="bg-gray-900">
-                      {v.name} ({v.lang}) {v.lang.startsWith('es') ? '🇪🇸' : ''}
-                    </option>
-                  ))}
-                </select>
+                <label className="block text-[10px] text-gray-500 uppercase font-black mb-3 italic">Selección rápida (Voz en Español):</label>
+                
+                {spanishVoices.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-2 max-h-[200px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/20">
+                    {spanishVoices.map(v => (
+                      <button
+                        key={v.name}
+                        onClick={() => setConfig({...config, voiceName: v.name})}
+                        className={`text-left p-3 rounded-xl border transition-all text-[11px] flex items-center justify-between group ${
+                          config.voiceName === v.name 
+                            ? 'bg-yellow-500/20 border-yellow-500 text-yellow-200' 
+                            : 'bg-black/40 border-white/10 text-gray-400 hover:border-white/30'
+                        }`}
+                      >
+                        <span className="truncate pr-2 font-bold uppercase">{v.name}</span>
+                        <span className="bg-black/50 px-2 py-0.5 rounded text-[8px] opacity-60 group-hover:opacity-100">{v.lang}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="bg-red-500/10 border border-red-500/50 p-4 rounded-xl text-[10px] text-red-400 italic">
+                    No se detectaron voces en español en este navegador. Revisa la configuración de tu sistema.
+                  </div>
+                )}
               </div>
+
+              {otherVoices.length > 0 && (
+                <div>
+                  <label className="block text-[10px] text-gray-500 uppercase font-black mb-1">Otras Voces (No Español):</label>
+                  <select 
+                    value={config.voiceName} 
+                    onChange={e => setConfig({...config, voiceName: e.target.value})}
+                    className="w-full bg-black/50 border border-white/10 rounded-xl p-2.5 text-[11px] outline-none text-sky-200"
+                  >
+                    <option value="">Otras opciones...</option>
+                    {otherVoices.map(v => (
+                      <option key={v.name} value={v.name}>{v.name} ({v.lang})</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -108,9 +141,9 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
               </div>
               
               <button 
-                onClick={() => previewVoice("¡Hola! Así sonaré en tu directo cuando alguien use sus puntos de canal.")}
-                className="w-full py-2 bg-white/5 border border-white/10 rounded-xl text-[10px] font-bold uppercase hover:bg-white/10 transition-all"
-              >Probar Voz Ahora</button>
+                onClick={() => previewVoice("¡Prueba de voz! El sistema de enfriamiento está listo para el siguiente usuario.")}
+                className="w-full py-2 bg-white/5 border border-white/10 rounded-xl text-[10px] font-bold uppercase hover:bg-white/10 transition-all text-yellow-500 shadow-lg shadow-yellow-500/5"
+              >Probar Voz Seleccionada</button>
             </div>
           </section>
 
@@ -125,7 +158,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${config.aiCommentaryEnabled ? 'left-7' : 'left-1'}`} />
               </button>
             </div>
-            <p className="text-[9px] text-gray-500 mt-2 italic">Usa Gemini para generar texto sarcástico, pero usa la voz del navegador para máxima fluidez.</p>
+            <p className="text-[9px] text-gray-500 mt-2 italic">Gemini genera el texto sarcástico en español y la voz local lo narra instantáneamente.</p>
           </section>
         </div>
 
