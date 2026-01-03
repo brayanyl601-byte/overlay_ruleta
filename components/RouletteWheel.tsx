@@ -35,7 +35,6 @@ const RouletteWheel: React.FC<RouletteWheelProps> = ({
       
       const chosenSegmentIndex = matchingIndices[Math.floor(Math.random() * matchingIndices.length)];
       
-      // Aumentamos las vueltas para que se vea más rápido y fluido
       const extraTurns = 10 + Math.floor(Math.random() * 5);
       const targetRotation = rotation + (extraTurns * 360) + (chosenSegmentIndex * segmentAngle) + (segmentAngle / 2);
       
@@ -51,14 +50,11 @@ const RouletteWheel: React.FC<RouletteWheelProps> = ({
 
   return (
     <div className="relative flex items-center justify-center group">
-      {/* Outer Energy Ring - Glows more when spinning */}
       <div className={`absolute inset-0 rounded-full border-[8px] border-purple-500/20 scale-125 transition-all duration-1000 ${isSpinning ? 'animate-pulse scale-[1.3] border-purple-500/40' : ''}`}></div>
       <div className={`absolute inset-0 rounded-full border-[2px] border-sky-400/40 scale-110 animate-[spin_8s_linear_infinite] ${isSpinning ? 'animate-[spin_2s_linear_infinite]' : ''}`}></div>
       
-      {/* Dynamic Background Glow */}
       <div className={`absolute inset-0 rounded-full blur-[80px] transition-all duration-1000 ${isSpinning ? 'opacity-70 bg-purple-500 scale-150' : 'opacity-20 bg-sky-500 scale-100'}`}></div>
       
-      {/* Precision Gamer Pointer */}
       <div className="absolute -top-12 z-30 flex flex-col items-center">
         <div className="w-1.5 h-10 bg-white shadow-[0_0_15px_#fff]"></div>
         <div className="w-0 h-0 border-l-[22px] border-l-transparent border-r-[22px] border-r-transparent border-t-[32px] border-t-white drop-shadow-[0_0_15px_rgba(255,255,255,0.9)]"></div>
@@ -110,20 +106,30 @@ const RouletteWheel: React.FC<RouletteWheelProps> = ({
                   className="transition-all duration-500"
                 />
                 
-                <text
-                  transform={`rotate(${startAngle + angle / 2 - 90}) translate(150, 0) rotate(90)`}
-                  fill="white"
-                  textAnchor="middle"
-                  className="text-2xl font-black uppercase italic tracking-tighter"
-                  style={{ userSelect: 'none', filter: 'url(#neonGlow)' }}
-                >
-                  {res === SpinResult.WIN ? 'WIN' : 'SAFE'}
-                </text>
+                <g transform={`rotate(${startAngle + angle / 2 - 90}) translate(150, 0) rotate(90)`}>
+                  <text
+                    y="-5"
+                    fill="white"
+                    textAnchor="middle"
+                    className="text-2xl font-black uppercase italic tracking-tighter"
+                    style={{ userSelect: 'none', filter: 'url(#neonGlow)' }}
+                  >
+                    {res === SpinResult.WIN ? 'F' : 'ZAFÓ'}
+                  </text>
+                  <text
+                    y="25"
+                    fill="white"
+                    textAnchor="middle"
+                    className="text-2xl"
+                    style={{ userSelect: 'none' }}
+                  >
+                    {res === SpinResult.WIN ? '😨' : '😌'}
+                  </text>
+                </g>
               </g>
             );
           })}
           
-          {/* Inner Decorative Elements */}
           <circle r="48" fill="#030712" stroke="white" strokeWidth="2" />
           <circle r="40" fill="none" stroke={config.winColor} strokeWidth="2" strokeDasharray="12 6" className="animate-[spin_4s_linear_infinite]" />
           <circle r="34" fill="none" stroke={config.loseColor} strokeWidth="2" strokeDasharray="6 12" className="animate-[spin_6s_linear_infinite_reverse]" />
