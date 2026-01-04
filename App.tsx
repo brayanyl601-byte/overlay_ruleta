@@ -93,21 +93,12 @@ const App: React.FC = () => {
     return "";
   };
 
-  useEffect(() => {
-    if (!isBusy && queue.length > 0) {
-      const nextEvent = queue[0];
-      setQueue(prev => prev.slice(1));
-      processNextInQueue(nextEvent, queue.length);
-    }
-  }, [queue, isBusy]);
-
   const processNextInQueue = useCallback(async (event: SpinEvent, queueSize: number) => {
     setIsBusy(true);
     const won = Math.random() < config.winProbability;
     const result = won ? SpinResult.WIN : SpinResult.LOSE;
     const wheelName = ROULETTE_NAMES[Math.floor(Math.random() * ROULETTE_NAMES.length)];
     
-    // Backup inmediato
     const templates = LOCAL_MESSAGES[won ? 'WIN' : 'LOSE'];
     currentCommentaryRef.current = `${templates[Math.floor(Math.random() * templates.length)]}${event.username}`;
 
@@ -116,20 +107,26 @@ const App: React.FC = () => {
     setDisplayMessage('');
     setIsSpinning(true);
     
-    // Intro creativa
     let intro = `¡Prepárate! ${event.username} entra en ${wheelName}.`;
     if (queueSize > 1) {
       intro = `¡La fila para sufrir avanza! ${event.username} se enfrenta a ${wheelName} mientras otros ${queueSize} observan aterrados.`;
     }
     speak(intro);
 
-    // Obtener comentario de la IA de fondo pasando el nombre de la ruleta
     fetchAICommentary(event.username, won, queueSize + 1, wheelName).then(aiText => {
       if (aiText) {
         currentCommentaryRef.current = aiText;
       }
     });
   }, [config.winProbability, speak]);
+
+  useEffect(() => {
+    if (!isBusy && queue.length > 0) {
+      const nextEvent = queue[0];
+      setQueue(prev => prev.slice(1));
+      processNextInQueue(nextEvent, queue.length);
+    }
+  }, [queue, isBusy, processNextInQueue]);
 
   const handleSpinComplete = useCallback((result: SpinResult) => {
     setIsSpinning(false);

@@ -12,35 +12,45 @@ const TwitchListener: React.FC<TwitchListenerProps> = ({ settings, onRedeem }) =
   const sessionIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    // Only attempt connection if we have basic settings
+    // Solo intentar conexión si tenemos las credenciales básicas necesarias
     if (!settings.channelId || !settings.accessToken || !settings.clientId) {
-      console.log("TwitchListener: Missing credentials for live connection. Staying in test mode.");
+      console.log("TwitchListener: Faltan credenciales (Channel ID, Token o Client ID). Esperando configuración...");
       return;
     }
 
     const connect = () => {
-      console.log("TwitchListener: Connecting to Twitch EventSub WebSocket...");
+      console.log("TwitchListener: Iniciando conexión a Twitch EventSub...");
       const ws = new WebSocket('wss://eventsub.wss.twitch.tv/ws');
       wsRef.current = ws;
 
       ws.onmessage = async (event) => {
         const data = JSON.parse(event.data);
         
+        // 1. Manejo de bienvenida y suscripción
         if (data.metadata.message_type === 'session_welcome') {
           sessionIdRef.current = data.payload.session.id;
-          console.log("TwitchListener: Welcome received. Session ID:", sessionIdRef.current);
-          
-          // To finalize connection, we'd normally make a POST request to Twitch API 
-          // to subscribe to 'channel.channel_points_custom_reward_redemption.add'.
-          // Since this is a client-side demo, we'll log instructions.
+          console.log("TwitchListener: Sesión de WebSocket establecida:", sessionIdRef.current);
           subscribeToRedemptions(sessionIdRef.current!);
         }
 
+        // 2. Manejo de notificaciones de canje
         if (data.metadata.message_type === 'notification') {
           const payload = data.payload.event;
-          // Filter by reward ID if specified
-          if (settings.rewardId && payload.reward.id !== settings.rewardId) return;
+          const receivedRewardId = payload.reward.id;
+          const configuredRewardId = settings.rewardId?.trim();
 
+          // REGRA DE FILTRADO ESTRICTO
+          // Si el usuario puso un ID en la configuración, comparamos rigurosamente
+          if (configuredRewardId && configuredRewardId !== "") {
+            // Comparamos IDs ignorando mayúsculas/minúsculas y espacios
+            if (receivedRewardId.toLowerCase() !== configuredRewardId.toLowerCase()) {
+              console.log(`[Twitch] Canje IGNORADO: "${payload.reward.title}" (ID: ${receivedRewardId}). Se esperaba: ${configuredRewardId}`);
+              return; // Detenemos la ejecución aquí, no se manda a la ruleta
+            }
+          }
+
+          console.log(`[Twitch] Canje ACEPTADO: "${payload.reward.title}" para el usuario ${payload.user_name}`);
+          
           onRedeem({
             id: payload.id,
             username: payload.user_name,
@@ -50,18 +60,27 @@ const TwitchListener: React.FC<TwitchListenerProps> = ({ settings, onRedeem }) =
         }
       };
 
-      ws.onclose = () => {
-        console.log("TwitchListener: Connection closed. Retrying in 10s...");
+      ws.onclose = (e) => {
+        console.log("TwitchListener: Conexión cerrada. Motivo:", e.reason, "Reintentando en 10s...");
         setTimeout(connect, 10000);
       };
 
       ws.onerror = (err) => {
-        console.error("TwitchListener: WS Error", err);
+        console.error("TwitchListener: Error en el WebSocket de Twitch", err);
       };
     };
 
     const subscribeToRedemptions = async (sessionId: string) => {
       try {
+        // Intentamos suscribirnos a nivel de API de Twitch
+        // Nota: Twitch permite filtrar por reward_id en la propia suscripción
+        const condition: any = { broadcaster_user_id: settings.channelId };
+        const rewardId = settings.rewardId?.trim();
+        
+        if (rewardId && rewardId !== "") {
+          condition.reward_id = rewardId;
+        }
+
         const response = await fetch('https://api.twitch.tv/helix/eventsub/subscriptions', {
           method: 'POST',
           headers: {
@@ -72,7 +91,7 @@ const TwitchListener: React.FC<TwitchListenerProps> = ({ settings, onRedeem }) =
           body: JSON.stringify({
             type: 'channel.channel_points_custom_reward_redemption.add',
             version: '1',
-            condition: { broadcaster_user_id: settings.channelId },
+            condition: condition,
             transport: {
               method: 'websocket',
               session_id: sessionId
@@ -82,23 +101,26 @@ const TwitchListener: React.FC<TwitchListenerProps> = ({ settings, onRedeem }) =
         
         if (!response.ok) {
           const err = await response.json();
-          console.error("TwitchListener: Failed to subscribe", err);
+          console.error("TwitchListener: Error en la suscripción de Twitch API", err);
         } else {
-          console.log("TwitchListener: Successfully subscribed to redemptions!");
+          console.log(`TwitchListener: Suscripción confirmada para ${rewardId ? `ID: ${rewardId}` : 'TODAS las recompensas'}`);
         }
       } catch (err) {
-        console.error("TwitchListener: Subscription error", err);
+        console.error("TwitchListener: Error de red al intentar suscribirse", err);
       }
     };
 
     connect();
 
     return () => {
-      if (wsRef.current) wsRef.current.close();
+      if (wsRef.current) {
+        console.log("TwitchListener: Limpiando conexión anterior...");
+        wsRef.current.close();
+      }
     };
-  }, [settings, onRedeem]);
+  }, [settings.channelId, settings.rewardId, settings.clientId, settings.accessToken, onRedeem]);
 
-  return null; // Invisible component
+  return null;
 };
 
 export default TwitchListener;
