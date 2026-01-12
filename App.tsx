@@ -25,23 +25,40 @@ const ROULETTE_NAMES = [
 ];
 
 const App: React.FC = () => {
-  const [config, setConfig] = useState<RouletteConfig>({
-    winProbability: 0.3,
-    winColor: '#9333ea', 
-    loseColor: '#0ea5e9', 
-    spinDuration: 4000,
-    voiceName: '',
-    pitch: 1.0,
-    rate: 1.05,
-    aiCommentaryEnabled: true,
-    scale: 0.8,
-    positionX: 50,
-    positionY: 50
+  // Cargar configuración guardada o usar valores por defecto
+  const [config, setConfig] = useState<RouletteConfig>(() => {
+    const saved = localStorage.getItem('roulette_config');
+    return saved ? JSON.parse(saved) : {
+      winProbability: 0.3,
+      winColor: '#9333ea', 
+      loseColor: '#0ea5e9', 
+      spinDuration: 4000,
+      voiceName: '',
+      pitch: 1.0,
+      rate: 1.05,
+      volume: 1.0, // Por defecto al máximo
+      aiCommentaryEnabled: true,
+      scale: 0.8,
+      positionX: 50,
+      positionY: 50
+    };
   });
 
-  const [twitchSettings, setTwitchSettings] = useState<TwitchSettings>({
-    channelId: '', rewardId: '', clientId: '', accessToken: ''
+  const [twitchSettings, setTwitchSettings] = useState<TwitchSettings>(() => {
+    const saved = localStorage.getItem('twitch_settings');
+    return saved ? JSON.parse(saved) : {
+      channelId: '', rewardId: '', clientId: '', accessToken: ''
+    };
   });
+
+  // Guardar en localStorage cada vez que cambien los ajustes
+  useEffect(() => {
+    localStorage.setItem('roulette_config', JSON.stringify(config));
+  }, [config]);
+
+  useEffect(() => {
+    localStorage.setItem('twitch_settings', JSON.stringify(twitchSettings));
+  }, [twitchSettings]);
 
   const [queue, setQueue] = useState<SpinEvent[]>([]);
   const [isBusy, setIsBusy] = useState(false);
@@ -63,8 +80,9 @@ const App: React.FC = () => {
     if (selectedVoice) utterance.voice = selectedVoice;
     utterance.pitch = config.pitch;
     utterance.rate = config.rate;
+    utterance.volume = config.volume; // Aplicar el volumen guardado
     synth.speak(utterance);
-  }, [config.voiceName, config.pitch, config.rate]);
+  }, [config.voiceName, config.pitch, config.rate, config.volume]);
 
   const fetchAICommentary = async (username: string, won: boolean, queueSize: number, wheelName: string): Promise<string> => {
     if (config.aiCommentaryEnabled && process.env.API_KEY) {

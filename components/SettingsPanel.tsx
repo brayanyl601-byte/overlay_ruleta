@@ -87,7 +87,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
             <div className="space-y-5">
               <div>
                 <label className="block text-[10px] text-gray-500 uppercase font-black mb-3 italic">Selección rápida:</label>
-                <div className="grid grid-cols-1 gap-2 max-h-[150px] overflow-y-auto pr-2">
+                <div className="grid grid-cols-1 gap-2 max-h-[120px] overflow-y-auto pr-2">
                   {spanishVoices.map(v => (
                     <button
                       key={v.name}
@@ -110,8 +110,17 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   <input type="range" min="0.5" max="2" step="0.1" value={config.rate} onChange={e => setConfig({...config, rate: parseFloat(e.target.value)})} className="w-full h-1 bg-gray-800 rounded-full appearance-none accent-white" />
                 </div>
               </div>
+
+              {/* NUEVO: Control de Volumen */}
+              <div>
+                <label className="flex justify-between text-[10px] text-gray-500 uppercase font-black mb-1">
+                  Volumen Maestro
+                  <span className="text-yellow-500">{(config.volume * 100).toFixed(0)}%</span>
+                </label>
+                <input type="range" min="0" max="1" step="0.05" value={config.volume} onChange={e => setConfig({...config, volume: parseFloat(e.target.value)})} className="w-full h-1 bg-gray-800 rounded-full appearance-none accent-yellow-500" />
+              </div>
               
-              <button onClick={() => previewVoice("Prueba de voz.")} className="w-full py-2 bg-white/5 border border-white/10 rounded-xl text-[10px] font-bold uppercase hover:bg-white/10 transition-all text-yellow-500">Probar Voz</button>
+              <button onClick={() => previewVoice("Prueba de volumen y voz.")} className="w-full py-2 bg-white/5 border border-white/10 rounded-xl text-[10px] font-bold uppercase hover:bg-white/10 transition-all text-yellow-500">Probar Sonido</button>
             </div>
           </section>
 
@@ -129,7 +138,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
           </section>
         </div>
 
-        {/* COLUMNA 3: CONEXIÓN TWITCH (OPTIMIZADA) */}
+        {/* COLUMNA 3: CONEXIÓN TWITCH */}
         <div className="space-y-6">
           <section className="bg-white/5 p-6 rounded-3xl border border-white/10">
             <h3 className="text-sky-400 font-black uppercase text-[10px] tracking-widest mb-4 border-b border-white/5 pb-2">Conexión Twitch</h3>
@@ -157,6 +166,10 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 <label className="block text-[9px] text-gray-500 uppercase font-black">OAuth Token</label>
                 <input type="password" value={twitchSettings.accessToken} onChange={e => setTwitchSettings({...twitchSettings, accessToken: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-[10px] font-mono" />
                 <HelpLink href="https://twitchtokengenerator.com/" text="→ Generar Token" />
+              </div>
+              <div className="bg-yellow-500/10 border border-yellow-500/30 p-2 rounded-lg">
+                <p className="text-[8px] text-yellow-500 font-bold uppercase">💡 Auto-Guardado</p>
+                <p className="text-[7px] text-gray-400 italic">Los cambios se guardan al instante para la próxima vez que abras el overlay.</p>
               </div>
             </div>
           </section>

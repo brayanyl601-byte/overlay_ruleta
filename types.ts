@@ -12,6 +12,7 @@ export interface RouletteConfig {
   voiceName: string; // Browser voice name
   pitch: number;
   rate: number;
+  volume: number; // Nueva propiedad para volumen (0 a 1)
   aiCommentaryEnabled: boolean;
   scale: number;
   positionX: number;
